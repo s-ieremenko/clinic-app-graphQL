@@ -13,7 +13,9 @@ export const typeDefs = gql`
         patientUpdate(patientId: ID!, patient: PatientInput!): PatientPayload!
         patientDelete(patientId: ID!): PatientPayload!
         doctorCreate(doctor: DoctorInput!): DoctorPayload!
-        signup(email: String!, phoneNumber: String, password: String!, isDoctor: Boolean!, doctor: DoctorInput, patient: PatientInput): AuthPayload
+        signup(credentials: CredentialsInput, phoneNumber: String, isDoctor: Boolean!, doctor: DoctorInput, patient: PatientInput): AuthPayload!
+        signin(credentials: CredentialsInput): AuthPayload!
+        makeAnAppointment(patientId: ID!,doctorId: ID!, day: String!): PatientPayload!
     }
 
     type User {
@@ -85,6 +87,11 @@ export const typeDefs = gql`
     type AuthPayload {
         userErrors: [UserError!]!
         token: String
+    }
+
+    input CredentialsInput {
+        email: String!
+        password: String!
     }
     enum Day {
         MONDAY

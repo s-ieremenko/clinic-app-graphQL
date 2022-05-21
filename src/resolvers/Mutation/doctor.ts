@@ -19,7 +19,16 @@ interface DoctorPayloadType {
 }
 
 export const doctorResolvers = {
-  doctorCreate: async (_: any, { doctor }: DoctorArgs, { prisma }: Context): Promise<DoctorPayloadType> => {
+  doctorCreate: async (_: any, { doctor }: DoctorArgs, { prisma, userInfo }: Context): Promise<DoctorPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        doctor: null
+      };
+    }
+
     const {
       name,
       specialization,
@@ -30,7 +39,7 @@ export const doctorResolvers = {
     if (!name || !specialization || !experience || !workingDays) {
       return {
         userErrors: [{
-          message: 'You must provide all the data to create a patient'
+          message: 'You must provide all the data to create a doctor'
         }],
         doctor: null
 
@@ -46,7 +55,7 @@ export const doctorResolvers = {
           specialization,
           experience,
           workingDays,
-          userId: 3
+          userId: userInfo.userId
         }
       })
     };

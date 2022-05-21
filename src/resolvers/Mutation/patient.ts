@@ -1,5 +1,6 @@
 import { Context } from '../../index';
-import { Patient, Prisma } from '@prisma/client';
+import { Day, Patient, Prisma } from '@prisma/client';
+import { canUserMutateProfile } from '../../utils/canUserMutateProfile';
 
 interface PatientArgs {
   patient: {
@@ -19,7 +20,20 @@ interface PatientPayloadType {
 }
 
 export const patientResolvers = {
-  patientCreate: async (_: any, { patient }: PatientArgs, { prisma }: Context): Promise<PatientPayloadType> => {
+  patientCreate: async (_: any, { patient }: PatientArgs, {
+    prisma,
+    userInfo
+  }: Context): Promise<PatientPayloadType> => {
+
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        patient: null
+      };
+    }
+
     const {
       name,
       address,
@@ -46,7 +60,7 @@ export const patientResolvers = {
           address,
           phoneNumber,
           dateOfBirth: birthDate,
-          userId: 12
+          userId: userInfo.userId
         }
       })
     };
@@ -54,7 +68,27 @@ export const patientResolvers = {
   patientUpdate: async (_: any, {
     patientId,
     patient
-  }: { patientId: string, patient: PatientArgs['patient'] }, { prisma }: Context): Promise<PatientPayloadType> => {
+  }: { patientId: string, patient: PatientArgs['patient'] }, {
+                          prisma,
+                          userInfo
+                        }: Context): Promise<PatientPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        patient: null
+      };
+    }
+
+    const error = await canUserMutateProfile({
+      userId: userInfo.userId,
+      patientId: +patientId,
+      prisma
+    });
+
+    if (error) return error;
+
     const {
       name,
       address,
@@ -107,7 +141,19 @@ export const patientResolvers = {
     };
 
   },
-  patientDelete: async (_: any, { patientId }: { patientId: string }, { prisma }: Context): Promise<PatientPayloadType> => {
+  patientDelete: async (_: any, { patientId }: { patientId: string }, {
+    prisma,
+    userInfo
+  }: Context): Promise<PatientPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        patient: null
+      };
+    }
+
     const patient = await prisma.patient.findUnique({
       where: {
         id: +patientId
@@ -130,6 +176,65 @@ export const patientResolvers = {
     return {
       userErrors: [],
       patient
+    };
+  },
+  makeAnAppointment: async (_: any, {
+    patientId,
+    doctorId,
+    day
+  }: { patientId: string, doctorId: string, day: Day }, { userInfo, prisma }: Context) => {
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        patient: null
+      };
+    }
+
+    // const patient = await prisma.patient.findUnique({
+    //   where: {
+    //     id: +patientId
+    //   }
+    // });
+    // if (!patient) {
+    //   return {
+    //     userErrors: [{
+    //       message: 'No patient found'
+    //     }],
+    //     patient: null
+    //   };
+    // }
+
+    const doctor = await prisma.doctor.findUnique({
+      where: {
+        id: +doctorId
+      }
+    });
+    if (!doctor) {
+      return {
+        userErrors: [{
+          message: 'No doctor found'
+        }],
+        patient: null
+      };
+    }
+    // @ts-ignore
+
+
+    return {
+      userErrors: [],
+      patient: prisma.patient.update({
+        where: {
+          id: +patientId
+        },
+        data: {
+          doctors: {
+            // @ts-ignore
+            connect: { doctorId: +doctorId }
+          }
+        }
+      })
     };
   }
 };
