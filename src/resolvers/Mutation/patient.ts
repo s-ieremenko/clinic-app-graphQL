@@ -150,10 +150,17 @@ export const patientResolvers = {
         patient: null
       };
     }
-
-    const error = await isPatientExisting({ patientId, prisma });
+    const error = await canUserMutateProfile({
+      userId: userInfo.userId,
+      patientId: +patientId,
+      prisma
+    });
 
     if (error) return error;
+
+    const patientError = await isPatientExisting({ patientId, prisma });
+
+    if (patientError) return patientError;
 
     return {
       userErrors: [],
@@ -248,7 +255,6 @@ export const patientResolvers = {
       userErrors: [],
       patient: updatedPatient
     };
-
   }
 };
 
