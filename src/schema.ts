@@ -15,7 +15,8 @@ export const typeDefs = gql`
         doctorCreate(doctor: DoctorInput!): DoctorPayload!
         signup(credentials: CredentialsInput, phoneNumber: String, isDoctor: Boolean!, doctor: DoctorInput, patient: PatientInput): AuthPayload!
         signin(credentials: CredentialsInput): AuthPayload!
-        makeAnAppointment(patientId: ID!,doctorId: ID!, day: String!): PatientPayload!
+        patientChooseDoctor(patientId: ID!,doctorId: ID!, day: String!): PatientPayload!
+        patientDeleteDoctor(patientId: ID!,doctorId: ID!): PatientPayload!
     }
 
     type User {

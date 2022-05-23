@@ -1,6 +1,8 @@
 import { Context } from '../../index';
-import { Day, Patient, Prisma } from '@prisma/client';
+import { Day, Doctor, Patient, Prisma } from '@prisma/client';
 import { canUserMutateProfile } from '../../utils/canUserMutateProfile';
+import { isPatientExisting } from '../../utils/isPatientExisting';
+import { findDoctor } from '../../utils/findDoctor';
 
 interface PatientArgs {
   patient: {
@@ -8,7 +10,6 @@ interface PatientArgs {
     address?: string;
     phoneNumber?: string
     dateOfBirth?: Date
-
   };
 }
 
@@ -17,6 +18,13 @@ interface PatientPayloadType {
     message: string
   }[],
   patient: Patient | Prisma.Prisma__PatientClient<Patient> | null
+}
+
+interface DoctorPayloadType {
+  userErrors: {
+    message: string
+  }[],
+  doctor: Doctor | Prisma.Prisma__DoctorClient<Patient> | null
 }
 
 export const patientResolvers = {
@@ -104,19 +112,8 @@ export const patientResolvers = {
       };
     }
 
-    const patientExist = await prisma.patient.findUnique({
-      where: {
-        id: +patientId
-      }
-    });
-    if (!patientExist) {
-      return {
-        userErrors: [{
-          message: 'No patient found'
-        }],
-        patient: null
-      };
-    }
+    const patientError = await isPatientExisting({ patientId, prisma });
+    if (patientError) return patientError;
 
     let payloadToUpdate = {
       name,
@@ -154,35 +151,28 @@ export const patientResolvers = {
       };
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: {
-        id: +patientId
-      }
-    });
-    if (!patient) {
-      return {
-        userErrors: [{
-          message: 'No patient found'
-        }],
-        patient: null
-      };
-    }
+    const error = await isPatientExisting({ patientId, prisma });
 
-    await prisma.patient.delete({
-      where: {
-        id: +patientId
-      }
-    });
+    if (error) return error;
+
     return {
       userErrors: [],
-      patient
+      patient: prisma.patient.delete({
+        where: {
+          id: +patientId
+        }
+      })
     };
+
   },
-  makeAnAppointment: async (_: any, {
+  patientChooseDoctor: async (_: any, {
     patientId,
     doctorId,
     day
-  }: { patientId: string, doctorId: string, day: Day }, { userInfo, prisma }: Context) => {
+  }: { patientId: string, doctorId: string, day: Day }, {
+                                userInfo,
+                                prisma
+                              }: Context): Promise<PatientPayloadType | DoctorPayloadType> => {
     if (!userInfo) {
       return {
         userErrors: [{
@@ -191,36 +181,21 @@ export const patientResolvers = {
         patient: null
       };
     }
+    const error = await isPatientExisting({ patientId, prisma });
 
-    // const patient = await prisma.patient.findUnique({
-    //   where: {
-    //     id: +patientId
-    //   }
-    // });
-    // if (!patient) {
-    //   return {
-    //     userErrors: [{
-    //       message: 'No patient found'
-    //     }],
-    //     patient: null
-    //   };
-    // }
+    if (error) return error;
 
-    const doctor = await prisma.doctor.findUnique({
-      where: {
-        id: +doctorId
-      }
-    });
-    if (!doctor) {
+    const doctorResult = await findDoctor({ doctorId, prisma });
+    if (!doctorResult.userErrors.length) return doctorResult;
+
+    if (!doctorResult?.doctor?.workingDays.includes(day)) {
       return {
         userErrors: [{
-          message: 'No doctor found'
+          message: 'Doctor doesn"t work that day'
         }],
         patient: null
       };
     }
-    // @ts-ignore
-
 
     return {
       userErrors: [],
@@ -230,12 +205,50 @@ export const patientResolvers = {
         },
         data: {
           doctors: {
-            // @ts-ignore
-            connect: { doctorId: +doctorId }
+            connect: [{ id: +doctorId }]
           }
         }
       })
     };
+  },
+  patientDeleteDoctor: async (_: any, {
+    patientId,
+    doctorId
+  }: { patientId: string, doctorId: string }, {
+                                userInfo,
+                                prisma
+                              }: Context): Promise<PatientPayloadType | DoctorPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{
+          message: 'Forbidden access(unauthenticated)'
+        }],
+        patient: null
+      };
+    }
+    const patientError = await isPatientExisting({ patientId, prisma });
+    if (patientError) return patientError;
+
+    const doctorResult = await findDoctor({ doctorId, prisma });
+    if (!doctorResult.userErrors.length) return doctorResult;
+
+
+    const updatedPatient = await prisma.patient.update({
+      where: {
+        id: +patientId
+      },
+      data: {
+        doctors: {
+          disconnect: [{ id: +doctorId }]
+        }
+      }
+    });
+
+    return {
+      userErrors: [],
+      patient: updatedPatient
+    };
+
   }
 };
 

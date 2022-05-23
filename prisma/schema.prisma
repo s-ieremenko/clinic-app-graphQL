@@ -38,7 +38,7 @@ model Patient {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   dateOfBirth DateTime
-  doctors PatientsToDoctors[]
+  doctors Doctor[]
   assigments Assigment[]
   userId Int
   user User @relation(fields:[userId],references: [id])
@@ -52,7 +52,7 @@ model Doctor {
   workingDays Day[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  patients PatientsToDoctors[]
+  patients Patient[]
   assigments Assigment[]
   userId Int
   user User @relation(fields:[userId],references: [id])
@@ -71,12 +71,4 @@ model Assigment {
   doctor  Doctor  @relation(fields: [doctortId], references: [id])
   }
 
-model   PatientsToDoctors {
-  patient Patient @relation(fields: [patientId], references: [id])
-  patientId Int
-  doctor Doctor @relation(fields: [doctorId], references: [id])
-  doctorId Int
-  assignedAt DateTime @default(now())
 
-  @@id([patientId, doctorId])
-}
