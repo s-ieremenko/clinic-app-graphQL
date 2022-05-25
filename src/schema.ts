@@ -6,6 +6,7 @@ export const typeDefs = gql`
     type Query {
         patients: [Patient]!
         doctors: [Doctor]!
+        me: User
     }
 
     type Mutation {

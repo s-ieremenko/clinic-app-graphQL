@@ -234,9 +234,11 @@ export const patientResolvers = {
       };
     }
     const patientError = await isPatientExisting({ patientId, prisma });
+    console.log(patientError);
     if (patientError) return patientError;
 
     const doctorResult = await findDoctor({ doctorId, prisma });
+    console.log(doctorResult);
     if (!doctorResult.userErrors.length) return doctorResult;
 
 

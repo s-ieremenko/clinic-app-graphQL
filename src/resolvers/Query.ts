@@ -5,7 +5,6 @@ export const Query = {
 
     const patients = prisma.patient.findMany({
       orderBy: [
-        // @ts-ignore
         { dateOfBirth: 'desc' }
       ]
     });
@@ -19,5 +18,14 @@ export const Query = {
       ]
     });
     return doctors;
+  },
+  me: (_: any, __: any, { userInfo, prisma }: Context) => {
+    if (!userInfo) return null;
+
+    return prisma.user.findUnique({
+      where: {
+        id: userInfo.userId
+      }
+    });
   }
 };
