@@ -193,7 +193,7 @@ export const patientResolvers = {
     if (error) return error;
 
     const doctorResult = await findDoctor({ doctorId, prisma });
-    if (!doctorResult.userErrors.length) return doctorResult;
+    if (doctorResult.userErrors.length) return doctorResult;
 
     if (!doctorResult?.doctor?.workingDays.includes(day)) {
       return {
@@ -239,7 +239,7 @@ export const patientResolvers = {
 
     const doctorResult = await findDoctor({ doctorId, prisma });
     console.log(doctorResult);
-    if (!doctorResult.userErrors.length) return doctorResult;
+    if (doctorResult.userErrors.length) return doctorResult;
 
 
     const updatedPatient = await prisma.patient.update({
