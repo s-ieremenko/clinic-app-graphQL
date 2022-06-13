@@ -1,5 +1,5 @@
 import { Context } from '../../index';
-import { Day, Doctor, Prisma } from '@prisma/client';
+import { Day, Doctor, Patient, Prisma } from '@prisma/client';
 
 interface DoctorArgs {
   doctor: {
@@ -7,6 +7,7 @@ interface DoctorArgs {
     specialization?: string,
     experience?: number | null,
     workingDays?: Day[]
+    patients?: Patient[]
 
   };
 }

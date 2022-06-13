@@ -13,18 +13,18 @@ interface PatientArgs {
   };
 }
 
-interface PatientPayloadType {
+export interface PatientPayloadType {
   userErrors: {
     message: string
   }[],
   patient: Patient | Prisma.Prisma__PatientClient<Patient> | null
 }
 
-interface DoctorPayloadType {
+export interface DoctorPayloadType {
   userErrors: {
     message: string
   }[],
-  doctor: Doctor | Prisma.Prisma__DoctorClient<Patient> | null
+  doctor: Doctor | Prisma.Prisma__DoctorClient<Doctor> | null
 }
 
 export const patientResolvers = {
@@ -112,8 +112,9 @@ export const patientResolvers = {
       };
     }
 
-    const patientError = await isPatientExisting({ patientId, prisma });
-    if (patientError) return patientError;
+    const patientResult = await isPatientExisting({ patientId, prisma });
+
+    if (patientResult.userErrors.length) return patientResult;
 
     let payloadToUpdate = {
       name,
@@ -158,9 +159,9 @@ export const patientResolvers = {
 
     if (error) return error;
 
-    const patientError = await isPatientExisting({ patientId, prisma });
+    const patientResult = await isPatientExisting({ patientId, prisma });
 
-    if (patientError) return patientError;
+    if (patientResult.userErrors.length) return patientResult;
 
     return {
       userErrors: [],
@@ -188,12 +189,12 @@ export const patientResolvers = {
         patient: null
       };
     }
-    const error = await isPatientExisting({ patientId, prisma });
+    const patientResult = await isPatientExisting({ patientId, prisma });
 
-    if (error) return error;
+    if (patientResult.userErrors.length) return patientResult;
 
     const doctorResult = await findDoctor({ doctorId, prisma });
-    if (!doctorResult.userErrors.length) return doctorResult;
+    if (doctorResult.userErrors.length) return doctorResult;
 
     if (!doctorResult?.doctor?.workingDays.includes(day)) {
       return {
@@ -233,11 +234,12 @@ export const patientResolvers = {
         patient: null
       };
     }
-    const patientError = await isPatientExisting({ patientId, prisma });
-    if (patientError) return patientError;
+    const patientResult = await isPatientExisting({ patientId, prisma });
+
+    if (patientResult.userErrors.length) return patientResult;
 
     const doctorResult = await findDoctor({ doctorId, prisma });
-    if (!doctorResult.userErrors.length) return doctorResult;
+    if (doctorResult.userErrors.length) return doctorResult;
 
 
     const updatedPatient = await prisma.patient.update({

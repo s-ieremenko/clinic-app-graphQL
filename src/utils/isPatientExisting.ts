@@ -10,6 +10,9 @@ export const isPatientExisting = async ({ patientId, prisma }: IsPatientExisting
   const patient = await prisma.patient.findUnique({
     where: {
       id: +patientId
+    },
+    include: {
+      doctors: true
     }
   });
 
@@ -21,4 +24,8 @@ export const isPatientExisting = async ({ patientId, prisma }: IsPatientExisting
       patient: null
     };
   }
+  return {
+    userErrors: [],
+    patient
+  };
 };
