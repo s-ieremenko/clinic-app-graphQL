@@ -18,6 +18,7 @@ export const typeDefs = gql`
         signin(credentials: CredentialsInput): AuthPayload!
         patientChooseDoctor(patientId: ID!,doctorId: ID!, day: String!): PatientPayload!
         patientDeleteDoctor(patientId: ID!,doctorId: ID!): PatientPayload!
+        assigmentCreate(assigment: AssigmentInput!, patientId: ID!,doctorId: ID! ): AssigmentPayload
     }
 
     type User {
@@ -73,6 +74,11 @@ export const typeDefs = gql`
         workingDays: [Day!]!
     }
 
+    input AssigmentInput {
+        procedure: String!
+        date: Date!
+    }
+
     type UserError {
         message: String!
     }
@@ -84,6 +90,11 @@ export const typeDefs = gql`
     type DoctorPayload {
         userErrors: [UserError!]!
         doctor: Doctor
+    }
+
+    type AssigmentPayload {
+        userErrors: [UserError!]!
+        assigment: Assigment
     }
 
     type AuthPayload {
